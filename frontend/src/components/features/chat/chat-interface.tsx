@@ -17,15 +17,14 @@ import { useWsClient } from "#/context/ws-client-provider";
 import { Messages } from "./messages";
 import { ChatSuggestions } from "./chat-suggestions";
 import { ActionSuggestions } from "./action-suggestions";
-
 import { ScrollToBottomButton } from "#/components/shared/buttons/scroll-to-bottom-button";
 import { LoadingSpinner } from "#/components/shared/loading-spinner";
 import { useGetTrajectory } from "#/hooks/mutation/use-get-trajectory";
 import { downloadTrajectory } from "#/utils/download-trajectory";
 import { displayErrorToast } from "#/utils/custom-toast-handlers";
 
-function getEntryPoint(hasRepository: boolean | null): string {
-  if (hasRepository) return "github";
+function getEntryPoint(): string {
+  // Убрали зависимость от selectedRepository, так как initial-query-slice.ts удалён
   return "direct";
 }
 
@@ -44,16 +43,18 @@ export function ChatInterface() {
   >("positive");
   const [feedbackModalIsOpen, setFeedbackModalIsOpen] = React.useState(false);
   const [messageToSend, setMessageToSend] = React.useState<string | null>(null);
-  const { selectedRepository } = useSelector(
-    (state: RootState) => state.initialQuery,
-  );
-  const params = useParams();
+  const params = useParams<{ conversationId?: string }>();
   const { mutate: getTrajectory } = useGetTrajectory();
 
   const handleSendMessage = async (content: string, files: File[]) => {
+    if (!send) {
+      displayErrorToast("WebSocket connection is not established");
+      return;
+    }
+
     if (messages.length === 0) {
       posthog.capture("initial_query_submitted", {
-        entry_point: getEntryPoint(selectedRepository !== null),
+        entry_point: getEntryPoint(),
         query_character_length: content.length,
       });
     } else {
@@ -62,6 +63,7 @@ export function ChatInterface() {
         current_message_length: content.length,
       });
     }
+
     const promises = files.map((file) => convertImageToBase64(file));
     const imageUrls = await Promise.all(promises);
 
@@ -73,6 +75,11 @@ export function ChatInterface() {
   };
 
   const handleStop = () => {
+    if (!send) {
+      displayErrorToast("WebSocket connection is not established");
+      return;
+    }
+
     posthog.capture("stop_button_clicked");
     send(generateAgentStateChangeEvent(AgentState.STOPPED));
   };
