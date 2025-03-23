@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink, useParams } from "react-router";
+import { NavLink, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { I18nKey } from "#/i18n/declaration";
 import { ConversationCard } from "./conversation-card";
