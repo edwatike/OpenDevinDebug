@@ -16,9 +16,9 @@ from openhands.server.static import SPAStaticFiles
 # Создаём базовое FastAPI-приложение
 base_app = FastAPI()
 
-# Подключаем статические файлы к пути /static, а не к корню
+# Подключаем статические файлы к пути /static
 base_app.mount(
-    '/static', SPAStaticFiles(directory='./frontend/build', html=True), name='dist'
+    '/static', SPAStaticFiles(directory='./frontend/build/client', html=True), name='dist'
 )
 
 # Добавляем middleware
@@ -40,7 +40,7 @@ base_app.middleware('http')(GitHubTokenMiddleware(base_app))
 # Добавляем маршрут для корневой страницы
 @base_app.get("/")
 async def serve_spa():
-    with open("./frontend/build/index.html", "r") as f:
+    with open("./frontend/build/client/index.html", "r") as f:
         return HTMLResponse(content=f.read())
 
 # Создаём Socket.IO ASGI-приложение, оборачивая base_app

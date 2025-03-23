@@ -1,38 +1,35 @@
-import React from "react";
+import { createContext, useContext, ReactNode } from 'react';
 
 interface AuthContextType {
-  githubTokenIsSet: boolean;
-  setGitHubTokenIsSet: (value: boolean) => void;
+  user: { id: string; email: string } | null;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
-interface AuthContextProps extends React.PropsWithChildren {
-  initialGithubTokenIsSet?: boolean;
-}
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
-
-function AuthProvider({ children, initialGithubTokenIsSet }: AuthContextProps) {
-  const [githubTokenIsSet, setGitHubTokenIsSet] = React.useState(
-    !!initialGithubTokenIsSet,
-  );
-
-  const value = React.useMemo(
-    () => ({
-      githubTokenIsSet,
-      setGitHubTokenIsSet,
-    }),
-    [githubTokenIsSet, setGitHubTokenIsSet],
-  );
-
-  return <AuthContext value={value}>{children}</AuthContext>;
-}
-
-function useAuth() {
-  const context = React.useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within a AuthProvider");
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
+};
+
+interface AuthProviderProps {
+  children: ReactNode;
 }
 
-export { AuthProvider, useAuth };
+export const AuthProvider = ({ children }: AuthProviderProps) => {
+  const value: AuthContextType = {
+    user: null,
+    login: async (email: string, password: string) => {
+      // Логика логина
+    },
+    logout: async () => {
+      // Логика выхода
+    },
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};

@@ -1,73 +1,77 @@
-/// <reference types="vitest" />
-/// <reference types="vite-plugin-svgr/client" />
-import { defineConfig, loadEnv } from "vite";
-import viteTsconfigPaths from "vite-tsconfig-paths";
-import svgr from "vite-plugin-svgr";
-import { reactRouter } from "@react-router/dev/vite";
-import { configDefaults } from "vitest/config";
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { resolve } from 'path';
+import { VitePWA } from 'vite-plugin-pwa';
+import { viteSingleFile } from 'vite-plugin-singlefile';
+import { viteCommonjs } from '@originjs/vite-plugin-commonjs';
+import { visualizer } from 'rollup-plugin-visualizer';
+import { chunkSplitPlugin } from 'vite-plugin-chunk-split';
+import { lingui } from '@lingui/vite-plugin';
+import { execSync } from 'child_process';
 
-export default defineConfig(({ mode }) => {
-  const {
-    VITE_BACKEND_HOST = "127.0.0.1:3000",
-    VITE_USE_TLS = "false",
-    VITE_FRONTEND_PORT = "3001",
-    VITE_INSECURE_SKIP_VERIFY = "false",
-  } = loadEnv(mode, process.cwd());
+const commitHash = execSync('git rev-parse --short HEAD').toString().trim();
 
-  const USE_TLS = VITE_USE_TLS === "true";
-  const INSECURE_SKIP_VERIFY = VITE_INSECURE_SKIP_VERIFY === "true";
-  const PROTOCOL = USE_TLS ? "https" : "http";
-  const WS_PROTOCOL = USE_TLS ? "wss" : "ws";
-
-  const API_URL = `${PROTOCOL}://${VITE_BACKEND_HOST}/`;
-  const WS_URL = `${WS_PROTOCOL}://${VITE_BACKEND_HOST}/`;
-  const FE_PORT = Number.parseInt(VITE_FRONTEND_PORT, 10);
-
-  return {
-    plugins: [
-      !process.env.VITEST && reactRouter(),
-      viteTsconfigPaths(),
-      svgr(),
-    ],
-    server: {
-      port: FE_PORT,
-      proxy: {
-        "/api": {
-          target: API_URL,
-          changeOrigin: true,
-          secure: !INSECURE_SKIP_VERIFY,
-        },
-        "/ws": {
-          target: WS_URL,
-          ws: true,
-          changeOrigin: true,
-          secure: !INSECURE_SKIP_VERIFY,
-        },
-        "/socket.io": {
-          target: WS_URL,
-          ws: true,
-          changeOrigin: true,
-          secure: !INSECURE_SKIP_VERIFY,
-          // rewriteWsOrigin: true,
-        },
+export default defineConfig({
+  base: '/static/',
+  plugins: [
+    viteCommonjs(),
+    react({
+      babel: {
+        plugins: ['macros'],
       },
-      watch: {
-        ignored: ['**/node_modules/**', '**/.git/**'],
+    }),
+    lingui(),
+    VitePWA({
+      registerType: 'prompt',
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      manifest: {
+        name: 'OpenHands',
+        short_name: 'OpenHands',
+        description: 'OpenHands',
+        theme_color: '#ffffff',
+        icons: [
+          {
+            src: '/android-chrome-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+          },
+          {
+            src: '/android-chrome-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+          },
+          {
+            src: '/android-chrome-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
       },
+    }),
+    viteSingleFile(),
+    chunkSplitPlugin({
+      strategy: 'unbundle',
+    }),
+    visualizer({
+      emitFile: true,
+      filename: 'stats.html',
+    }),
+  ],
+  define: {
+    __COMMIT_HASH__: JSON.stringify(commitHash),
+  },
+  resolve: {
+    alias: {
+      '#': resolve(__dirname, './src'),
     },
-    ssr: {
-      noExternal: ["react-syntax-highlighter"],
-    },
-    clearScreen: false,
-    test: {
-      environment: "jsdom",
-      setupFiles: ["vitest.setup.ts"],
-      exclude: [...configDefaults.exclude, "tests"],
-      coverage: {
-        reporter: ["text", "json", "html", "lcov", "text-summary"],
-        reportsDirectory: "coverage",
-        include: ["src/**/*.{ts,tsx}"],
-      },
-    },
-  };
+  },
+  build: {
+    outDir: 'build',
+    assetsDir: 'assets',
+    sourcemap: true,
+  },
+  server: {
+    port: 5173,
+  },
 });

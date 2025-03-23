@@ -6,7 +6,7 @@ import {
   useNavigate,
   useLocation,
   useSearchParams,
-} from "react-router";
+} from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import i18n from "#/i18n";
 import { useGitHubAuthUrl } from "#/hooks/use-github-auth-url";

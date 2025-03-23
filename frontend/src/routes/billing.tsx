@@ -1,4 +1,4 @@
-import { redirect, useSearchParams } from "react-router";
+import { redirect, useSearchParams } from "react-router-dom";
 import React from "react";
 import { PaymentForm } from "#/components/features/payment/payment-form";
 import { GetConfigResponse } from "#/api/open-hands.types";
